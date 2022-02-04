@@ -1,0 +1,239 @@
+<!--
+  BSD 3-Clause License
+  Copyright (c) 2022, Automatic Controls Equipment Systems, Inc.
+  Contributors: Cameron Vogt (@cvogt729)
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>
+      Servers
+    </title>
+    <!-- <link rel="stylesheet" type="text/css" href="css/main.css"/> -->
+    <style>
+      body, input, textarea {
+        background-color:black;
+        color:white;
+      }
+      button {
+        background-color:darkblue;
+        color:white;
+        border:solid 1px white;
+      }
+      button:hover {
+        background-color:darkred;
+      }
+      button:active {
+        background-color:darkgreen;
+      }
+      button:disabled {
+        background-color:darkslategray;
+      }
+      img {
+        height:2em;
+      }
+      .c {
+        text-align:center;
+      }
+      .e {
+        margin-left:0.5em;
+        margin-right:0.5em;
+        margin-top:0.25em;
+        margin-bottom:0.25em;
+      }
+      .column {
+        float:left;
+        width:50%;
+      }
+      .row {
+        content: "";
+        display:table;
+        clear:both;
+        width:100%;
+      }
+      a:link {
+        color: lightgreen;
+        background-color: transparent;
+        text-decoration: none;
+      }
+      a:visited {
+        color: lightgreen;
+        background-color: transparent;
+        text-decoration: none;
+      }
+      a:hover {
+        color: red;
+        background-color: transparent;
+        text-decoration: underline;
+      }
+      a:active {
+        color: yellow;
+        background-color: transparent;
+        text-decoration: underline;
+      }
+      td, th {
+        padding:4px;
+        border:solid 1px white;
+      }
+      tr {
+        background-color:#222222;
+      }
+      th {
+        background-color:darkslategray;
+      }
+      table {
+        border:solid 1px white;
+        border-collapse:collapse;
+      }
+    </style>
+    <script>
+      function resize(input){
+        hiddenSpan.innerHTML = input.value;
+        input.style.width = hiddenSpan.offsetWidth+"px";
+      }
+      function obfuscate(str){
+        let s = ""
+        for (var i=str.length-1;i>=0;--i){
+          s+=String.fromCharCode(str.charCodeAt(i)^4);
+        }
+        return s
+      }
+      function validatePort(obj){
+        let str = obj.value;
+        if (str.length>0){
+          str = str.replace(/\D/g, "");
+          if (str.length>0){
+            let num = Number(str);
+            if (num>65535){
+              num = 65535;
+            }
+            str = String(num).replace(/\D/g, "");
+          }
+          obj.value = str;
+        }
+      }
+      function addRow(ID, IP, port, user, pass){
+        const tr = document.createElement("TR");
+        const td_IP = document.createElement("TD");
+        const td_port = document.createElement("TD");
+        const td_user = document.createElement("TD");
+        const td_pass = document.createElement("TD");
+        const td_actions = document.createElement("TD");
+        const td_img = document.createElement("TD");
+        tr.appendChild(td_IP);
+        tr.appendChild(td_port);
+        tr.appendChild(td_user);
+        tr.appendChild(td_pass);
+        tr.appendChild(td_actions);
+        tr.appendChild(td_img);
+        const _IP = document.createElement("INPUT");
+        const _port = document.createElement("INPUT");
+        const _user = document.createElement("INPUT");
+        const _pass = document.createElement("INPUT");
+        const _img = document.createElement("IMG");
+        td_IP.appendChild(_IP);
+        td_port.appendChild(_port);
+        td_user.appendChild(_user);
+        td_pass.appendChild(_pass);
+        td_img.appendChild(_img);
+        _img.src = "images/checkmark.png";
+        //TODO - need to toggle the image src when testing connections
+        //TODO - also use css display:none by default
+        //TODO - test all connections should loop through the table rows
+        _IP.className = "e c";
+        _port.className = "e c";
+        _user.className = "e c";
+        _pass.className = "e c";
+        _IP.type = "text";
+        _port.type = "text";
+        _user.type = "text";
+        _pass.type = "password";
+        _IP.oninput = ()=>{ resize(_IP); };
+        _port.oninput = ()=>{ validatePort(_port); resize(_port); };
+        _user.oninput = ()=>{ resize(_user); };
+        _IP.value = IP;
+        _port.value = port;
+        _user.value = user;
+        resize(_IP);
+        resize(_port);
+        resize(_user);
+        resize(_pass);
+        _pass.value = pass;
+        const saveButton = document.createElement("BUTTON");
+        const testButton = document.createElement("BUTTON");
+        const deleteButton = document.createElement("BUTTON");
+        const configLink = document.createElement("A");
+        saveButton.innerHTML = "Save";
+        testButton.innerHTML = "Test Connection";
+        deleteButton.innerHTML = "Delete";
+        configLink.innerHTML = "Configure"
+        saveButton.className = "e";
+        testButton.className = "e";
+        deleteButton.className = "e";
+        configLink.className = "e";
+        td_actions.appendChild(saveButton);
+        td_actions.appendChild(testButton);
+        td_actions.appendChild(configLink);
+        td_actions.appendChild(deleteButton);
+        configLink.href = "__PREFIX__reports?ID="+ID;
+        saveButton.onclick = () => {
+
+        };
+        testButton.onclick = () => {
+
+        };
+        deleteButton.onclick = () => {
+          
+        };
+        tr.testConnection = testButton.onclick;
+        newServerRow.parentNode.insertBefore(tr, newServerRow);
+      }
+      function submitNew(){
+        //TODO - AJAX submit of new server, then addRow on success
+        addRow(0, newIP.value, newPort.value, newUser.value, newPass.value);
+        newIP.value = "";
+        newPort.value = "";
+        newUser.value = "";
+        newPass.value = "";
+      }
+    </script>
+  </head>
+  <body>
+    <div style="text-align:center">
+      <h1>FTP Server List</h1>
+      <br>
+      <table id="serverList" style="margin:0 auto">
+        <tr>
+          <th>Server IP</th>
+          <th>Port</th>
+          <th>Username</th>
+          <th>Password</th>
+          <th>Actions</th>
+          <th>Status</th>
+        </tr>
+        <tr id="newServerRow">
+          <td><input id="newIP" type="text" class="e c" oninput="resize(this)"></td>
+          <td><input id="newPort" type="text" class="e c" oninput="validatePort(this);resize(this)"></td>
+          <td><input id="newUser" type="text" class="e c" oninput="resize(this)"></td>
+          <td><input id="newPass" type="password" class="e c"></td>
+          <td><button class="e" onclick="submitNew()">Add New Server</button></td>
+          <td></td>
+        </tr>
+      </table>
+      <br>
+      <button class="e" onclick="testAll()">Test All Connections</button>
+      <button class="e" onclick="run()">Trigger FTP</button>
+      <br>
+      <h3 class="e">Status: <span id="statusText" style="color:red">Idle</span></h3>
+      <a href="https://github.com/automatic-controls/report-ftp-addon/blob/main/README.md" target="_blank">Documentation</a>
+      <span id="hiddenSpan" style="min-width:4em;color:black;display:inline-block;position:absolute;left:100000px"></span>
+    </div>
+    <script>
+      resize(newIP);
+      resize(newPort);
+      resize(newUser);
+      resize(newPass);
+      //__INIT_SCRIPT__
+    </script>
+  </body>
+</html>

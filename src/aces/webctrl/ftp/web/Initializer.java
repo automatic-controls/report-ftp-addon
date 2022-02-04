@@ -16,11 +16,17 @@ public class Initializer implements ServletContextListener {
   public volatile static Path dataFolder;
   public volatile static Path configs;
   public volatile static Path reports;
+  private volatile static String prefix;
   private volatile Thread th;
   private volatile boolean stop = false;
+  /** @return the prefix to use for constructing relative URL paths. */
+  public static String getPrefix(){
+    return prefix;
+  }
   @Override public void contextInitialized(ServletContextEvent e){
     info = AddOnInfo.getAddOnInfo();
     logger = info.getDateStampLogger();
+    prefix = '/'+info.getName()+'/';
     jsch = new JSch();
     dataFolder = info.getPrivateDir().toPath();
     Path scheduledReports = dataFolder.getParent().getParent().getParent().resolve("scheduled_reports");

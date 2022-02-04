@@ -7,16 +7,25 @@
   </listener>
 
   <welcome-file-list>
-    <welcome-file>index</welcome-file>
+    <welcome-file>servers</welcome-file>
   </welcome-file-list>
 
   <servlet>
-    <servlet-name>MainPage</servlet-name>
-    <servlet-class></servlet-class>
+    <servlet-name>ServerPage</servlet-name>
+    <servlet-class>aces.webctrl.ftp.web.ServerPage</servlet-class>
   </servlet>
   <servlet-mapping>
-    <servlet-name>MainPage</servlet-name>
-    <url-pattern>/index</url-pattern>
+    <servlet-name>ServerPage</servlet-name>
+    <url-pattern>/servers</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ReportPage</servlet-name>
+    <servlet-class>aces.webctrl.ftp.web.ReportPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ReportPage</servlet-name>
+    <url-pattern>/reports</url-pattern>
   </servlet-mapping>
 
   <security-constraint>
