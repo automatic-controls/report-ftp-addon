@@ -16,6 +16,12 @@ button:active {
 button:disabled {
   background-color:darkslategray;
 }
+img {
+  height:2em;
+}
+.c {
+  text-align:center;
+}
 .e {
   margin-left:0.5em;
   margin-right:0.5em;
@@ -56,14 +62,8 @@ td, th {
   padding:4px;
   border:solid 1px white;
 }
-tr:hover > td {
-  background-color:darkgreen;
-}
-tr:nth-child(odd) {
+tr {
   background-color:#222222;
-}
-tr:nth-child(even) {
-  background-color:#090909;
 }
 th {
   background-color:darkslategray;

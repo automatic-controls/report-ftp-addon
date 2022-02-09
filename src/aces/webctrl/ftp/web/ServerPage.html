@@ -9,83 +9,7 @@
     <title>
       Servers
     </title>
-    <!-- <link rel="stylesheet" type="text/css" href="css/main.css"/> -->
-    <style>
-      body, input, textarea {
-        background-color:black;
-        color:white;
-      }
-      button {
-        background-color:darkblue;
-        color:white;
-        border:solid 1px white;
-      }
-      button:hover {
-        background-color:darkred;
-      }
-      button:active {
-        background-color:darkgreen;
-      }
-      button:disabled {
-        background-color:darkslategray;
-      }
-      img {
-        height:2em;
-      }
-      .c {
-        text-align:center;
-      }
-      .e {
-        margin-left:0.5em;
-        margin-right:0.5em;
-        margin-top:0.25em;
-        margin-bottom:0.25em;
-      }
-      .column {
-        float:left;
-        width:50%;
-      }
-      .row {
-        content: "";
-        display:table;
-        clear:both;
-        width:100%;
-      }
-      a:link {
-        color: lightgreen;
-        background-color: transparent;
-        text-decoration: none;
-      }
-      a:visited {
-        color: lightgreen;
-        background-color: transparent;
-        text-decoration: none;
-      }
-      a:hover {
-        color: red;
-        background-color: transparent;
-        text-decoration: underline;
-      }
-      a:active {
-        color: yellow;
-        background-color: transparent;
-        text-decoration: underline;
-      }
-      td, th {
-        padding:4px;
-        border:solid 1px white;
-      }
-      tr {
-        background-color:#222222;
-      }
-      th {
-        background-color:darkslategray;
-      }
-      table {
-        border:solid 1px white;
-        border-collapse:collapse;
-      }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/main.css"/>
     <script>
       function resize(input){
         hiddenSpan.innerHTML = input.value;
@@ -136,10 +60,7 @@
         td_user.appendChild(_user);
         td_pass.appendChild(_pass);
         td_img.appendChild(_img);
-        _img.src = "images/checkmark.png";
-        //TODO - need to toggle the image src when testing connections
-        //TODO - also use css display:none by default
-        //TODO - test all connections should loop through the table rows
+        _img.style.display = "none";
         _IP.className = "e c";
         _port.className = "e c";
         _user.className = "e c";
@@ -175,26 +96,166 @@
         td_actions.appendChild(testButton);
         td_actions.appendChild(configLink);
         td_actions.appendChild(deleteButton);
-        configLink.href = "__PREFIX__reports?ID="+ID;
+        configLink.href = "__PREFIX__reports?ID="+encodeURIComponent(ID);
         saveButton.onclick = () => {
-
+          if (!saveButton.disabled){
+            saveButton.disabled = true;
+            validatePort(_port);
+            resize(_port);
+            if (_IP.value.length===0){
+              statusText.innerHTML = "Server IP must be non-empty.";
+            }else if (_port.value.length===0){
+              statusText.innerHTML = "Port must be non-empty.";
+            }else if (_user.value.length===0){
+              statusText.innerHTML = "Username must be non-empty.";
+            }else{
+              let str = "type=save"+
+                "&ID="+encodeURIComponent(ID)+
+                "&IP="+encodeURIComponent(_IP.value)+
+                "&port="+encodeURIComponent(_port.value)+
+                "&user="+encodeURIComponent(_user.value);
+              const password = obfuscate(_pass.value);
+              if (password.length!==0){
+                str+="&pass="+encodeURIComponent(password);
+              }
+              statusText.innerHTML = "Submitting...";
+              const req = new XMLHttpRequest();
+              req.open("POST","__PREFIX__servers",true);
+              req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+              req.onreadystatechange = function(){
+                if (this.readyState==4){
+                  if (this.status==200){
+                    statusText.innerHTML = _IP.value+" saved successfully.";
+                  }else{
+                    statusText.innerHTML = "Error Code "+this.status;
+                  }
+                  saveButton.disabled = false;
+                }
+              }
+              req.send(str);
+              return;
+            }
+            saveButton.disabled = false;
+          }
         };
         testButton.onclick = () => {
-
+          if (!testButton.disabled){
+            testButton.disabled = true;
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__servers",true);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState==4){
+                if (this.status==200){
+                  _img.src = "images/checkmark.png";
+                  _img.style.display = "initial";
+                }else if (this.status==504){
+                  _img.src = "images/red_x.png";
+                  _img.style.display = "initial";
+                }else{
+                  _img.style.display = "none";
+                  statusText.innerHTML = "Error Code "+this.status;
+                }
+                testButton.disabled = false;
+              }
+            }
+            req.send("type=test&ID="+encodeURIComponent(ID));
+          }
         };
         deleteButton.onclick = () => {
-          
+          if (!deleteButton.disabled && confirm("Are you sure you want to delete "+_IP.value+"?") && !deleteButton.disabled){
+            deleteButton.disabled = true;
+            statusText.innerHTML = "Submitting...";
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__servers",true);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState==4){
+                if (this.status==200){
+                  tr.parentNode.removeChild(tr);
+                  statusText.innerHTML = "Deleted "+_IP.value;
+                }else{
+                  statusText.innerHTML = "Error Code "+this.status;
+                }
+                deleteButton.disabled = false;
+              }
+            }
+            req.send("type=delete&ID="+encodeURIComponent(ID));
+          }
         };
         tr.testConnection = testButton.onclick;
         newServerRow.parentNode.insertBefore(tr, newServerRow);
       }
-      function submitNew(){
-        //TODO - AJAX submit of new server, then addRow on success
-        addRow(0, newIP.value, newPort.value, newUser.value, newPass.value);
-        newIP.value = "";
-        newPort.value = "";
-        newUser.value = "";
-        newPass.value = "";
+      function testAll(){
+        for (const row of serverList.getElementsByTagName("TR")){
+          row.testConnection();
+        }
+      }
+      function submitNew(button){
+        if (!button.disabled){
+          button.disabled = true;
+          validatePort(newPort);
+          resize(newPort);
+          const IP = newIP.value;
+          const port = newPort.value;
+          const username = newUser.value;
+          const password = newPass.value;
+          if (IP.length===0){
+            statusText.innerHTML = "Server IP must be non-empty.";
+          }else if (port.length===0){
+            statusText.innerHTML = "Port must be non-empty.";
+          }else if (username.length===0){
+            statusText.innerHTML = "Username must be non-empty.";
+          }else if (password.length===0){
+            statusText.innerHTML = "Password must be non-empty.";
+          }else{
+            statusText.innerHTML = "Submitting...";
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__servers",true);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState==4){
+                if (this.status==200){
+                  addRow(this.responseText, IP, port, username, password);
+                  newIP.value = "";
+                  newPort.value = "";
+                  newUser.value = "";
+                  newPass.value = "";
+                  statusText.innerHTML = _IP.value+" added successfully.";
+                }else{
+                  statusText.innerHTML = "Error Code "+this.status;
+                }
+                button.disabled = false;
+              }
+            }
+            req.send(
+              "type=create"+
+              "&IP="+encodeURIComponent(newIP.value)+
+              "&port="+encodeURIComponent(newPort.value)+
+              "&user="+encodeURIComponent(newUser.value)+
+              "&pass="+encodeURIComponent(obfuscate(password))
+            );
+            return;
+          }
+          button.disabled = false;
+        }
+      }
+      function run(){
+        statusText.innerHTML = "Submitting...";
+        const req = new XMLHttpRequest();
+        req.open("POST","__PREFIX__servers",true);
+        req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+        req.onreadystatechange = function(){
+          if (this.readyState==4){
+            if (this.status==200){
+              statusText.innerHTML = "FTP has been triggered.";
+            }else{
+              statusText.innerHTML = "Error Code "+this.status;
+            }
+            button.disabled = false;
+          }
+        }
+        req.send("type=run");
       }
     </script>
   </head>
@@ -203,7 +264,7 @@
       <h1>FTP Server List</h1>
       <br>
       <table id="serverList" style="margin:0 auto">
-        <tr>
+        <tr id="headerRow">
           <th>Server IP</th>
           <th>Port</th>
           <th>Username</th>
@@ -216,7 +277,7 @@
           <td><input id="newPort" type="text" class="e c" oninput="validatePort(this);resize(this)"></td>
           <td><input id="newUser" type="text" class="e c" oninput="resize(this)"></td>
           <td><input id="newPass" type="password" class="e c"></td>
-          <td><button class="e" onclick="submitNew()">Add New Server</button></td>
+          <td><button class="e" onclick="submitNew(this)">Add New Server</button></td>
           <td></td>
         </tr>
       </table>
@@ -226,13 +287,15 @@
       <br>
       <h3 class="e">Status: <span id="statusText" style="color:red">Idle</span></h3>
       <a href="https://github.com/automatic-controls/report-ftp-addon/blob/main/README.md" target="_blank">Documentation</a>
-      <span id="hiddenSpan" style="min-width:4em;color:black;display:inline-block;position:absolute;left:100000px"></span>
+      <span id="hiddenSpan" style="min-width:4em;color:black;display:inline-block;position:absolute;left:-100000px"></span>
     </div>
     <script>
       resize(newIP);
       resize(newPort);
       resize(newUser);
       resize(newPass);
+      headerRow.testConnection = ()=>{};
+      newServerRow.testConnection = ()=>{};
       //__INIT_SCRIPT__
     </script>
   </body>

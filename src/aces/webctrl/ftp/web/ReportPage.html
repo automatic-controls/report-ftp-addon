@@ -7,49 +7,93 @@
 <html>
   <head>
     <title>
-      Login
+      Reports
     </title>
-    <link rel="stylesheet" type="text/css" href="css/main.css"/>
+    <!-- <link rel="stylesheet" type="text/css" href="css/main.css"/> -->
+    <style>
+      body, input, textarea {
+      background-color:black;
+      color:white;
+    }
+    button {
+      background-color:darkblue;
+      color:white;
+      border:solid 1px white;
+    }
+    button:hover {
+      background-color:darkred;
+    }
+    button:active {
+      background-color:darkgreen;
+    }
+    button:disabled {
+      background-color:darkslategray;
+    }
+    img {
+      height:2em;
+    }
+    .c {
+      text-align:center;
+    }
+    .e {
+      margin-left:0.5em;
+      margin-right:0.5em;
+      margin-top:0.25em;
+      margin-bottom:0.25em;
+    }
+    .column {
+      float:left;
+      width:50%;
+    }
+    .row {
+      content: "";
+      display:table;
+      clear:both;
+      width:100%;
+    }
+    a:link {
+      color: lightgreen;
+      background-color: transparent;
+      text-decoration: none;
+    }
+    a:visited {
+      color: lightgreen;
+      background-color: transparent;
+      text-decoration: none;
+    }
+    a:hover {
+      color: red;
+      background-color: transparent;
+      text-decoration: underline;
+    }
+    a:active {
+      color: yellow;
+      background-color: transparent;
+      text-decoration: underline;
+    }
+    td, th {
+      padding:4px;
+      border:solid 1px white;
+    }
+    tr {
+      background-color:#222222;
+    }
+    th {
+      background-color:darkslategray;
+    }
+    table {
+      border:solid 1px white;
+      border-collapse:collapse;
+    }
+    </style>
     <script>
-      function obfuscate(str){
-        let s = ""
-        for (var i=str.length-1;i>=0;--i){
-          s+=String.fromCharCode(str.charCodeAt(i)^4);
-        }
-        return s
-      }
-      function submitLogin(){
-        submitButton.disabled = true;
-        const pass = obfuscate(password.value);
-        statusText.innerHTML = "Submitting...";
-        let req = new XMLHttpRequest()
-        req.open("POST","__PREFIX__Login",true)
-        req.setRequestHeader("content-type", "application/x-www-form-urlencoded")
-        req.onreadystatechange = function(){
-          if (this.readyState==4){
-            if (this.status==200){
-              window.location.href = "__PREFIX__index";
-              statusText.innerHTML = "SUCCESS";
-            }else if (this.status==403){
-              statusText.innerHTML = "Credentials are incorrect.";
-            }else{
-              statusText.innerHTML = "The centralizer database is currently inaccessible.";
-            }
-            submitButton.disabled = false;
-          }
-        }
-        req.send("submit&password="+encodeURIComponent(pass));
-      }
+      
     </script>
   </head>
   <body>
     <div style="text-align:center">
-      <h1>Centralizer Database Login</h1>
-      <div class="e">Username: __USERNAME__</div>
-      <label for="password">Password:</label>
-      <input id="password" class="e" type="password" autocomplete="off" onkeydown="if (event.which===13){ submitLogin(); }">
-      <br>
-      <button id="submitButton" class="e" onclick="submitLogin()">Submit</button>
+      <h1>Report List For __SERVER__</h1>
+      
       <h3 id="statusText" class="e" style="color:red"></h3>
     </div>
   </body>
