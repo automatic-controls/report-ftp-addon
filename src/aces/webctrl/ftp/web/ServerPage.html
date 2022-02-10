@@ -12,6 +12,17 @@
     <link rel="stylesheet" type="text/css" href="css/main.css"/>
     <script>
       function resize(input){
+        const styles = window.getComputedStyle(input);
+        hiddenSpan.style.fontFamily = styles.fontFamily;
+        hiddenSpan.style.fontSize = styles.fontSize;
+        hiddenSpan.style.fontStyle = styles.fontStyle;
+        hiddenSpan.style.fontWeight = styles.fontWeight;
+        hiddenSpan.style.letterSpacing = styles.letterSpacing;
+        hiddenSpan.style.textTransform = styles.textTransform;
+        hiddenSpan.style.borderLeftWidth = styles.borderLeftWidth;
+        hiddenSpan.style.borderRightWidth = styles.borderRightWidth;
+        hiddenSpan.style.paddingLeft = styles.paddingLeft;
+        hiddenSpan.style.paddingRight = styles.paddingRight;
         hiddenSpan.innerHTML = input.value;
         input.style.width = hiddenSpan.offsetWidth+"px";
       }
@@ -141,6 +152,7 @@
         testButton.onclick = () => {
           if (!testButton.disabled){
             testButton.disabled = true;
+            _img.style.display = "none";
             const req = new XMLHttpRequest();
             req.open("POST","__PREFIX__servers",true);
             req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
@@ -153,7 +165,6 @@
                   _img.src = "images/red_x.png";
                   _img.style.display = "initial";
                 }else{
-                  _img.style.display = "none";
                   statusText.innerHTML = "Error Code "+this.status;
                 }
                 testButton.disabled = false;
@@ -221,7 +232,11 @@
                   newPort.value = "";
                   newUser.value = "";
                   newPass.value = "";
-                  statusText.innerHTML = _IP.value+" added successfully.";
+                  resize(newIP);
+                  resize(newPort);
+                  resize(newUser);
+                  resize(newPass);
+                  statusText.innerHTML = IP+" added successfully.";
                 }else{
                   statusText.innerHTML = "Error Code "+this.status;
                 }
@@ -230,9 +245,9 @@
             }
             req.send(
               "type=create"+
-              "&IP="+encodeURIComponent(newIP.value)+
-              "&port="+encodeURIComponent(newPort.value)+
-              "&user="+encodeURIComponent(newUser.value)+
+              "&IP="+encodeURIComponent(IP)+
+              "&port="+encodeURIComponent(port)+
+              "&user="+encodeURIComponent(username)+
               "&pass="+encodeURIComponent(obfuscate(password))
             );
             return;
@@ -287,7 +302,7 @@
       <br>
       <h3 class="e">Status: <span id="statusText" style="color:red">Idle</span></h3>
       <a href="https://github.com/automatic-controls/report-ftp-addon/blob/main/README.md" target="_blank">Documentation</a>
-      <span id="hiddenSpan" style="min-width:4em;color:black;display:inline-block;position:absolute;left:-100000px"></span>
+      <span id="hiddenSpan" style="min-width:6em;color:black;display:inline-block;position:absolute;left:-100000px"></span>
     </div>
     <script>
       resize(newIP);

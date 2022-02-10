@@ -9,92 +9,144 @@
     <title>
       Reports
     </title>
-    <!-- <link rel="stylesheet" type="text/css" href="css/main.css"/> -->
-    <style>
-      body, input, textarea {
-      background-color:black;
-      color:white;
-    }
-    button {
-      background-color:darkblue;
-      color:white;
-      border:solid 1px white;
-    }
-    button:hover {
-      background-color:darkred;
-    }
-    button:active {
-      background-color:darkgreen;
-    }
-    button:disabled {
-      background-color:darkslategray;
-    }
-    img {
-      height:2em;
-    }
-    .c {
-      text-align:center;
-    }
-    .e {
-      margin-left:0.5em;
-      margin-right:0.5em;
-      margin-top:0.25em;
-      margin-bottom:0.25em;
-    }
-    .column {
-      float:left;
-      width:50%;
-    }
-    .row {
-      content: "";
-      display:table;
-      clear:both;
-      width:100%;
-    }
-    a:link {
-      color: lightgreen;
-      background-color: transparent;
-      text-decoration: none;
-    }
-    a:visited {
-      color: lightgreen;
-      background-color: transparent;
-      text-decoration: none;
-    }
-    a:hover {
-      color: red;
-      background-color: transparent;
-      text-decoration: underline;
-    }
-    a:active {
-      color: yellow;
-      background-color: transparent;
-      text-decoration: underline;
-    }
-    td, th {
-      padding:4px;
-      border:solid 1px white;
-    }
-    tr {
-      background-color:#222222;
-    }
-    th {
-      background-color:darkslategray;
-    }
-    table {
-      border:solid 1px white;
-      border-collapse:collapse;
-    }
-    </style>
+    <link rel="stylesheet" type="text/css" href="css/main.css"/>
     <script>
-      
+      function resize(input){
+        const styles = window.getComputedStyle(input);
+        hiddenSpan.style.fontFamily = styles.fontFamily;
+        hiddenSpan.style.fontSize = styles.fontSize;
+        hiddenSpan.style.fontStyle = styles.fontStyle;
+        hiddenSpan.style.fontWeight = styles.fontWeight;
+        hiddenSpan.style.letterSpacing = styles.letterSpacing;
+        hiddenSpan.style.textTransform = styles.textTransform;
+        hiddenSpan.style.borderLeftWidth = styles.borderLeftWidth;
+        hiddenSpan.style.borderRightWidth = styles.borderRightWidth;
+        hiddenSpan.style.paddingLeft = styles.paddingLeft;
+        hiddenSpan.style.paddingRight = styles.paddingRight;
+        hiddenSpan.innerHTML = input.value;
+        input.style.width = hiddenSpan.offsetWidth+"px";
+      }
+      function clearHistory(button){
+        if (!button.disabled){
+          button.disabled = true;
+          statusText.innerHTML = "Submitting...";
+          const req = new XMLHttpRequest();
+          req.open("POST","__PREFIX__reports",true);
+          req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+          req.onreadystatechange = function(){
+            if (this.readyState==4){
+              if (this.status==200){
+                statusText.innerHTML = "History cleared.";
+              }else{
+                statusText.innerHTML = "Error Code "+this.status;
+              }
+              button.disabled = false;
+            }
+          }
+          req.send("ID=__ID__&type=clear");
+        }
+      }
+      function submitNew(button){
+        if (!button.disabled){
+          button.disabled = true;
+          const label = newLabel.value;
+          const folder = newFolder.value;
+          if (label.length===0){
+            statusText.innerHTML = "Report identifier must be non-empty.";
+          }else{
+            statusText.innerHTML = "Submitting...";
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__reports",true);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState==4){
+                if (this.status==200){
+                  addRow(label, folder);
+                  newLabel.value = "";
+                  newFolder.value = "";
+                  resize(newLabel);
+                  resize(newFolder);
+                  statusText.innerHTML = "Report mapping created.";
+                }else{
+                  statusText.innerHTML = "Error Code "+this.status;
+                }
+                button.disabled = false;
+              }
+            }
+            req.send("ID=__ID__&type=create&label="+encodeURIComponent(label)+"&folder="+encodeURIComponent(folder));
+            return;
+          }
+          button.disabled = false;
+        }
+      }
+      function addRow(label, folder){
+        const tr = document.createElement("TR");
+        const td_label = document.createElement("TD");
+        const td_folder = document.createElement("TD");
+        const td_actions = document.createElement("TD");
+        tr.appendChild(td_label);
+        tr.appendChild(td_folder);
+        tr.appendChild(td_actions);
+        td_label.innerText = label;
+        td_folder.innerText = folder;
+        const deleteButton = document.createElement("BUTTON");
+        deleteButton.innerHTML = "Delete";
+        deleteButton.className = "e";
+        td_actions.appendChild(deleteButton);
+        deleteButton.onclick = ()=>{
+          if (!deleteButton.disabled && confirm("Are you sure?") && !deleteButton.disabled){
+            deleteButton.disabled = true;
+            statusText.innerHTML = "Submitting...";
+            const req = new XMLHttpRequest();
+            req.open("POST","__PREFIX__reports",true);
+            req.setRequestHeader("content-type", "application/x-www-form-urlencoded");
+            req.onreadystatechange = function(){
+              if (this.readyState==4){
+                if (this.status==200){
+                  tr.parentNode.removeChild(tr);
+                  statusText.innerHTML = "Deleted report mapping.";
+                }else{
+                  statusText.innerHTML = "Error Code "+this.status;
+                }
+                deleteButton.disabled = false;
+              }
+            }
+            req.send("ID=__ID__&type=delete&label="+encodeURIComponent(label)+"&folder="+encodeURIComponent(folder));
+          }
+        };
+        newRow.parentNode.insertBefore(tr, newRow);
+      }
     </script>
   </head>
   <body>
     <div style="text-align:center">
       <h1>Report List For __SERVER__</h1>
-      
-      <h3 id="statusText" class="e" style="color:red"></h3>
+      <br>
+      <table id="reportList" style="margin:0 auto">
+        <tr id="headerRow">
+          <th>Report Description Identifier</th>
+          <th>Remote FTP Folder Path</th>
+          <th>Actions</th>
+        </tr>
+        <tr id="newRow">
+          <td><input id="newLabel" type="text" class="e c" oninput="resize(this)"></td>
+          <td><input id="newFolder" type="text" class="e c" oninput="resize(this)"></td>
+          <td><button class="e" onclick="submitNew(this)">Add New Report</button></td>
+        </tr>
+      </table>
+      <br>
+      <button class="e" onclick="clearHistory(this)">Clear History</button>
+      <br>
+      <h3 class="e">Status: <span id="statusText" style="color:red">Idle</span></h3>
+      <a href="__PREFIX__servers">Back To Server List</a>
+      <br>
+      <a href="https://github.com/automatic-controls/report-ftp-addon/blob/main/README.md" target="_blank">Documentation</a>
+      <span id="hiddenSpan" style="min-width:14em;color:black;display:inline-block;position:absolute;left:-100000px"></span>
     </div>
+    <script>
+      resize(newLabel);
+      resize(newFolder);
+      //__INIT_SCRIPT__
+    </script>
   </body>
 </html>

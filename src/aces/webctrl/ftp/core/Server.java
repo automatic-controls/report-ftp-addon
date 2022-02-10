@@ -5,9 +5,6 @@
 */
 package aces.webctrl.ftp.core;
 import aces.webctrl.ftp.web.*;
-import com.jcraft.jsch.*;
-import java.nio.file.*;
-import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 /**
@@ -25,6 +22,8 @@ public class Server {
   private volatile String username = "";
   /** Password for accessing the server. */
   private volatile char[] password = new char[0];
+  /** Specifies the connection protocol for this server. */
+  private volatile ServerType type = ServerType.UNKNOWN;
   /** Contains scheduled reports to send to this server. */
   private volatile ArrayList<Report> reports = new ArrayList<Report>();
   /** Contains filenames of reports already sent to the server. */
@@ -41,6 +40,24 @@ public class Server {
    */
   public int getID(){
     return ID;
+  }
+  /**
+   * @return the IP address of this {@code Server}.
+   */
+  public String getHost(){
+    return host;
+  }
+  /**
+   * @return the port of this {@code Server}.
+   */
+  public int getPort(){
+    return port;
+  }
+  /**
+   * @return the username for this {@code Server}.
+   */
+  public String getUsername(){
+    return username;
   }
   /**
    * Set the host and port for this {@code Server}.
@@ -62,12 +79,32 @@ public class Server {
     lock.writeLock().unlock();
   }
   /**
-   * Add a report to the list.
+   * Sets the username used for connecting to this {@code Server}.
    */
-  public void addReport(Report r){
+  public void setUsername(String username){
     lock.writeLock().lock();
-    reports.add(r);
+    this.username = username;
     lock.writeLock().unlock();
+  }
+  /**
+   * Add a report to the list. The report must be uniquely identified by the pair (ID, folder).
+   * @return whether the report was successfully appended.
+   */
+  public boolean addReport(Report r){
+    lock.writeLock().lock();
+    try{
+      final String ID = r.getID();
+      final String folder = r.getFolder();
+      for (Report rr:reports){
+        if (ID.equals(rr.getID()) && folder.equals(rr.getFolder())){
+          return false;
+        }
+      }
+      reports.add(r);
+      return true;
+    }finally{
+      lock.writeLock().unlock();
+    }
   }
   /**
    * Removes a report from the list.
@@ -77,6 +114,25 @@ public class Server {
     lock.writeLock().lock();
     try{
       return reports.remove(r);
+    }finally{
+      lock.writeLock().unlock();
+    }
+  }
+  /**
+   * Removes a report from the list.
+   * @return {@code true} if the report was successfully removed; {@code false} if the report was not in the list to begin with.
+   */
+  public boolean removeReport(String ID, String folder){
+    lock.writeLock().lock();
+    try{
+      Report r = null;
+      for (Report rr:reports){
+        if (ID.equals(rr.getID()) && folder.equals(rr.getFolder())){
+          r = rr;
+          break;
+        }
+      }
+      return r!=null && reports.remove(r);
     }finally{
       lock.writeLock().unlock();
     }
@@ -116,7 +172,7 @@ public class Server {
       byte[] hostBytes = host.getBytes(java.nio.charset.StandardCharsets.UTF_8);
       byte[] usernameBytes = username.getBytes(java.nio.charset.StandardCharsets.UTF_8);
       byte[] passwordBytes = java.nio.charset.StandardCharsets.UTF_8.encode(java.nio.CharBuffer.wrap(password)).array();
-      int len = hostBytes.length+usernameBytes.length+passwordBytes.length+24;
+      int len = hostBytes.length+usernameBytes.length+passwordBytes.length+28;
       ArrayList<byte[]> sent = new ArrayList<byte[]>(sentReports.size());
       byte[] arr;
       for (String str:sentReports){
@@ -130,6 +186,7 @@ public class Server {
       SerializationStream s = new SerializationStream(len);
       s.write(hostBytes);
       s.write(port);
+      s.write(type.ordinal());
       s.write(usernameBytes);
       s.write(passwordBytes);
       s.write(reports.size());
@@ -152,6 +209,7 @@ public class Server {
   public static Server deserialize(SerializationStream s){
     try{
       Server server = new Server(s.readString(), s.readInt());
+      server.type = ServerType.fromOrdinal(s.readInt());
       server.username = s.readString();
       server.password = java.nio.charset.StandardCharsets.UTF_8.decode(java.nio.ByteBuffer.wrap(s.readBytes())).array();
       int len = s.readInt();
@@ -179,37 +237,13 @@ public class Server {
     final String host = this.host;
     final int port = this.port;
     final String username = this.username;
-    String password = new String(Utility.obfuscate(this.password.clone()));
+    final String password = new String(Utility.obfuscate(this.password.clone()));
     lock.readLock().unlock();
-    Session s = null;
-    ChannelSftp ch = null;
-    try{
-      s = Initializer.jsch.getSession(username, host, port);
-      s.setPassword(password);
-      password = null;
-      Properties config = new Properties();
-      config.put("StrictHostKeyChecking", "no");
-      s.setConfig(config);
-      s.connect();
-      ch = (ChannelSftp)s.openChannel("sftp");
-      ch.connect();
-      return true;
-    }catch(Throwable t){
-      Initializer.logger.println(t);
-      return false;
-    }finally{
-      try{
-        if (ch!=null && ch.isConnected()){
-          ch.exit();
-          ch.disconnect();
-        }
-        if (s!=null && s.isConnected()){
-          s.disconnect();
-        }
-      }catch(Throwable t){
-        Initializer.logger.println(t);
-      }
+    ServerType ret = Protocols.test(type, host, port, username, password);
+    if (ret!=ServerType.UNKNOWN){
+      type = ret;
     }
+    return ret!=ServerType.UNKNOWN;
   }
   /**
    * Determines if the given report should be sent to this server, and enqueues the task if necessary.
@@ -247,6 +281,7 @@ public class Server {
   }
   /**
    * Sends all queued reports to the server.
+   * @return an indication of success or failure.
    */
   public boolean sendReports(){
     if (isQueueEmpty()){
@@ -254,47 +289,8 @@ public class Server {
     }
     lock.writeLock().lock();
     try{
-      Session s = null;
-      ChannelSftp ch = null;
-      try{
-        s = Initializer.jsch.getSession(username, host, port);
-        s.setPassword(new String(Utility.obfuscate(this.password.clone())));
-        Properties config = new Properties();
-        config.put("StrictHostKeyChecking", "no");
-        s.setConfig(config);
-        s.connect();
-        ch = (ChannelSftp)s.openChannel("sftp");
-        ch.connect();
-        for (Report r:reports){
-          ch.cd(r.getFolder());
-          for (ReportFile rf:r.files){
-            try(
-              BufferedInputStream in = new BufferedInputStream(Files.newInputStream(rf.getLocal(), StandardOpenOption.READ)); 
-            ){
-              ch.put(in, rf.getRemote());
-              sentReports.add(rf.getRemote());
-            }catch(Throwable t){
-              Initializer.logger.println(t);
-            }
-          }
-        }
-        return true;
-      }finally{
-        if (ch!=null && ch.isConnected()){
-          ch.exit();
-          ch.disconnect();
-        }
-        if (s!=null && s.isConnected()){
-          s.disconnect();
-        }
-      }
-    }catch(Throwable t){
-      Initializer.logger.println(t);
-      return false;
+      return Protocols.sendReports(type, host, port, username, new String(Utility.obfuscate(this.password.clone())), reports, sentReports);
     }finally{
-      for (Report r:reports){
-        r.files.clear();
-      }
       lock.writeLock().unlock();
     }
   }

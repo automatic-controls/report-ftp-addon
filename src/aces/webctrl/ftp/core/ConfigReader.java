@@ -87,6 +87,7 @@ public class ConfigReader {
       }else{
         sb.append(arr[i]);
       }
+      ++i;
     }
     ++i;
     return sb.toString();

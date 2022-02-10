@@ -60,4 +60,92 @@ public class Utility {
     }
     return new String(arr, java.nio.charset.StandardCharsets.UTF_8);
   }
+  /**
+   * Intended to escape strings for use in Javascript.
+   * Escapes backslashes, single quotes, and double quotes.
+   * Replaces new-line characters with the corresponding escape sequences.
+   */
+  public static String escapeJS(String str){
+    int len = str.length();
+    StringBuilder sb = new StringBuilder(len+16);
+    char c;
+    for (int i=0;i<len;++i){
+      c = str.charAt(i);
+      switch (c){
+        case '\\': case '\'': case '"': {
+          sb.append('\\').append(c);
+          break;
+        }
+        case '\n': {
+          sb.append("\\n");
+          break;
+        }
+        case '\t': {
+          sb.append("\\t");
+          break;
+        }
+        case '\r': {
+          sb.append("\\r");
+          break;
+        }
+        case '\b': {
+          sb.append("\\b");
+          break;
+        }
+        case '\f': {
+          sb.append("\\f");
+          break;
+        }
+        default: {
+          sb.append(c);
+        }
+      }
+    }
+    return sb.toString();
+  }
+  /**
+   * Escapes a {@code String} for usage in HTML.
+   * @param str is the {@code String} to escape.
+   * @return the escaped {@code String}.
+   */
+  public static String escapeHTML(String str){
+    int len = str.length();
+    StringBuilder sb = new StringBuilder(len+16);
+    char c;
+    int j;
+    for (int i=0;i<len;++i){
+      c = str.charAt(i);
+      j = c;
+      if (j>=32 && j<127){
+        switch (c){
+          case '&':{
+            sb.append("&amp;");
+            break;
+          }
+          case '"':{
+            sb.append("&quot;");
+            break;
+          }
+          case '\'':{
+            sb.append("&apos;");
+            break;
+          }
+          case '<':{
+            sb.append("&lt;");
+            break;
+          }
+          case '>':{
+            sb.append("&gt;");
+            break;
+          }
+          default:{
+            sb.append(c);
+          }
+        }
+      }else if (j<1114111 && (j<=55296 || j>57343)){
+        sb.append("&#").append(Integer.toString(j)).append(";");
+      }
+    }
+    return sb.toString();
+  }
 }
