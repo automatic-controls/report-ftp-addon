@@ -72,6 +72,7 @@ public class Protocols {
               return false;
             }
             ftp.setSoTimeout(timeout);
+            ftp.enterLocalPassiveMode();
             if (!ftp.login(username, password)){
               return false;
             }
@@ -108,17 +109,20 @@ public class Protocols {
             ch = (ChannelSftp)s.openChannel("sftp");
             ch.connect();
             for (Report r:reports){
-              ch.cd(r.getFolder());
-              for (ReportFile rf:r.files){
-                try(
-                  BufferedInputStream in = new BufferedInputStream(Files.newInputStream(rf.getLocal(), StandardOpenOption.READ)); 
-                ){
-                  ch.put(in, rf.getRemote());
-                  sentReports.add(rf.getRemote());
-                }catch(Throwable t){
-                  Initializer.logger.println(t);
-                  return false;
+              try{
+                ch.cd(r.getFolder());
+                for (ReportFile rf:r.files){
+                  try(
+                    BufferedInputStream in = new BufferedInputStream(Files.newInputStream(rf.getLocal(), StandardOpenOption.READ));
+                  ){
+                    ch.put(in, rf.getRemote());
+                    sentReports.add(rf.getRemote());
+                  }catch(Throwable t){
+                    Initializer.logger.println(t);
+                  }
                 }
+              }catch(Throwable t){
+                Initializer.logger.println(t);
               }
             }
             return true;
@@ -142,21 +146,22 @@ public class Protocols {
               return false;
             }
             ftp.setSoTimeout(timeout);
+            ftp.enterLocalPassiveMode();
             if (!ftp.login(username, password)){
               return false;
             }
             for (Report r:reports){
               if (!ftp.changeWorkingDirectory(r.getFolder())){
-                return false;
+                Initializer.logger.println("Cannot locate folder: "+r.getFolder());
+                continue;
               }
               for (ReportFile rf:r.files){
                 try(
-                  BufferedInputStream in = new BufferedInputStream(Files.newInputStream(rf.getLocal(), StandardOpenOption.READ)); 
+                  BufferedInputStream in = new BufferedInputStream(Files.newInputStream(rf.getLocal(), StandardOpenOption.READ));
                 ){
-                  if (!ftp.storeFile(rf.getRemote(), in)){
-                    return false;
+                  if (ftp.storeFile(rf.getRemote(), in)){
+                    sentReports.add(rf.getRemote());
                   }
-                  sentReports.add(rf.getRemote());
                 }catch(Throwable t){
                   Initializer.logger.println(t);
                   return false;
