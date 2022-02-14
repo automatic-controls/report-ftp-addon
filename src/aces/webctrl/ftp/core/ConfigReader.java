@@ -10,6 +10,15 @@ public class ConfigReader {
   private char[] arr;
   private int i = 0;
   private int len;
+  public ConfigReader(StringBuilder sb, char[] arr){
+    this.arr = arr;
+    len = arr.length;
+    skipUntil("label");
+    String ID = nextToken();
+    if (ID.length()>0){
+      sb.append("<option value=\"").append(Utility.escapeHTML(ID)).append("\">\n");
+    }
+  }
   public ConfigReader(char[] arr){
     String ID, local, remote;
     this.arr = arr;

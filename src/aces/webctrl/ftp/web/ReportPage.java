@@ -8,6 +8,8 @@ import aces.webctrl.ftp.core.*;
 import java.io.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
+import java.nio.*;
+import java.nio.file.*;
 public class ReportPage extends HttpServlet {
   private volatile static String html = null;
   @Override public void init() throws ServletException {
@@ -53,8 +55,22 @@ public class ReportPage extends HttpServlet {
                   return false;
                 }
               });
+              String str = html.replace("__ID__", ID).replace("__SERVER__", s.getHost()).replace("//__INIT_SCRIPT__", sb.toString());
+              sb.setLength(0);
+              synchronized (Servers.configReadLock){
+                try(
+                  DirectoryStream<Path> stream = Files.newDirectoryStream(Initializer.configs);
+                ){
+                  for (Path config:stream){
+                    if (Files.isReadable(config)){
+                      new ConfigReader(sb, java.nio.charset.StandardCharsets.UTF_8.decode(ByteBuffer.wrap(Files.readAllBytes(config))).array());
+                    }
+                  }
+                }catch(Throwable t){}
+              }
+              str = str.replace("<!--__REPORTS__-->", sb.toString());
               res.setContentType("text/html");
-              res.getWriter().print(html.replace("__ID__", ID).replace("__SERVER__", s.getHost()).replace("//__INIT_SCRIPT__", sb.toString()));
+              res.getWriter().print(str);
             }else{
               switch (type){
                 case "clear":{

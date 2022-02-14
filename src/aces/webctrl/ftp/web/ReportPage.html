@@ -129,7 +129,7 @@
           <th>Actions</th>
         </tr>
         <tr id="newRow">
-          <td><input id="newLabel" type="text" class="e c" oninput="resize(this)"></td>
+          <td><input id="newLabel" list="reportIDs" class="e c" oninput="resize(this)"></td>
           <td><input id="newFolder" type="text" class="e c" oninput="resize(this)"></td>
           <td><button class="e" onclick="submitNew(this)">Add New Report</button></td>
         </tr>
@@ -142,6 +142,9 @@
       <br>
       <a href="https://github.com/automatic-controls/report-ftp-addon/blob/main/README.md" target="_blank">Documentation</a>
       <span id="hiddenSpan" style="min-width:14em;color:black;display:inline-block;position:absolute;left:-100000px"></span>
+      <datalist id="reportIDs">
+        <!--__REPORTS__-->
+      </datalist>
     </div>
     <script>
       resize(newLabel);

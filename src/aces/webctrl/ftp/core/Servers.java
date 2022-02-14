@@ -25,18 +25,22 @@ public class Servers {
   private volatile static Path dataFile;
   /** Contains a list of {@code Server} objects. */
   private final static ArrayList<Server> servers = new ArrayList<Server>();
+  /** Controls access to report config files. */
+  public final static Object configReadLock = new Object();
   /**
    * Analyzes current scheduled reports, and sends them to the appropriate servers.
    */
   public static void run(){
     if (servers.size()>0 && ftp.compareAndSet(false,true)){
       try{
-        try(
-          DirectoryStream<Path> stream = Files.newDirectoryStream(Initializer.configs);
-        ){
-          for (Path config:stream){
-            if (Files.isReadable(config)){
-              new ConfigReader(java.nio.charset.StandardCharsets.UTF_8.decode(ByteBuffer.wrap(Files.readAllBytes(config))).array());
+        synchronized (configReadLock){
+          try(
+            DirectoryStream<Path> stream = Files.newDirectoryStream(Initializer.configs);
+          ){
+            for (Path config:stream){
+              if (Files.isReadable(config)){
+                new ConfigReader(java.nio.charset.StandardCharsets.UTF_8.decode(ByteBuffer.wrap(Files.readAllBytes(config))).array());
+              }
             }
           }
         }
