@@ -46,10 +46,14 @@ public class Servers {
         }
         lock.readLock().lock();
         try{
+          boolean ret = true;
           for (Server s:servers){
             if (s!=null){
-              s.sendReports();
+              ret&=s.sendReports();
             }
+          }
+          if (!ret){
+            Initializer.log("Failed to send reports.");
           }
         }finally{
           lock.readLock().unlock();

@@ -33,4 +33,4 @@ The add-on tracks which reports it has uploaded to each server, so reports are o
 
 Error messages may be recorded in a system log file named *addon-ReportFTP.txt*.
 
-[Apache Commons Net](https://commons.apache.org/proper/commons-net/) is used for an implementation of the FTP and FTPS protocols. [JSch](http://www.jcraft.com/jsch/) is used for an implementation of the SFTP protocol.
+[Apache Commons Net](https://commons.apache.org/proper/commons-net/) is used for an implementation of the FTP and FTPS protocols. [JSch](https://github.com/mwiede/jsch) is used for an implementation of the SFTP protocol.

@@ -72,4 +72,16 @@ public class Initializer implements ServletContextListener {
       th.join();
     }catch(InterruptedException t){}
   }
+  /**
+   * Logs a message.
+   */
+  public synchronized static void log(String str){
+    logger.println(str);
+  }
+  /**
+   * Logs an error.
+   */
+  public synchronized static void log(Throwable t){
+    logger.println(t);
+  }
 }
